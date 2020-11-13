@@ -10,6 +10,7 @@ class PREH:
 
     name = "primary_raw_events_handler"
     event_das_rpc = RpcProxy('event_das')
+    logger_rpc = RpcProxy('logger')
 
     # Logic
 
@@ -68,6 +69,8 @@ class PREH:
         """Receiving events from REC 
         :param events: events got from REC service"""
 
+        self.logger_rpc.log(self.name, self.receive_events.__name__, events, "Info", "Receiving events...")
+        
         unique_events = self._unduplicate(events)
         clean_events = self._clean_events(unique_events)
 
@@ -77,11 +80,14 @@ class PREH:
         # TODO: get rid of this dumb try/finally
         try:
             self.event_das_rpc.save_events(clean_events)
-        finally:
-            return clean_events
+            self.logger_rpc.log(self.name, self.receive_events.__name__, events, "Info", "Events saved to event_das")
+        except:
+            self.logger_rpc.log(self.name, self.receive_events.__name__, events, "Error", "Can't save events to event_das")
+        return clean_events
 
     @http("POST", "/process")
     def receive_events_handler(self, request):
+        self.logger_rpc.log(self.name, self.receive_events_handler.__name__, str(request), "Info", "Manual events receive")
 
         content = request.get_data(as_text=True)
 
@@ -92,9 +98,9 @@ class PREH:
 
         print(map(lambda x: x["tags"], clean_events))
 
-        # try/finally allows us to ignore if this service doesn't exist
-        # TODO: get rid of this dumb try/finall
         try:
             self.event_das_rpc.save_events(clean_events)
-        finally:
-            return json.dumps(clean_events, ensure_ascii=False)
+            self.logger_rpc.log(self.name, self.receive_events_handler.__name__, str(request), "Info", "Events saved to event_das")
+        except:
+            self.logger_rpc.log(self.name, self.receive_events_handler.__name__, str(request), "Error", "Can't save events to event_das")
+        return json.dumps(clean_events, ensure_ascii=False)
