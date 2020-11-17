@@ -1,20 +1,64 @@
-# Primary Raw Events Handler
+# Первичный обработчик сырых мероприятий
 
-Название сервиса: `primary_raw_events_handler`
+Данный документ содержит описание работы и информацию о развертке микросервиса, предназначенного для получения патча сырых мероприятий, удаления дублей и перенаправления полученных таким образом мероприятий в сервис хранилище мероприятий.
+
+Название: `primary_raw_events_handler`
+
+Структура сервиса:
+
+| Файл               | Описание                                                |
+| ------------------ | ------------------------------------------------------- |
+| `preh.py`          | Код микросервиса                                        |
+| `config.yml`       | Конфигурационный файл со строкой подключения к RabbitMQ |
+| `run.sh`           | Файл для запуска краулера из Docker контейнера          |
+| `requirements.txt` | Верхнеуровневые зависимости                             |
+| `Dockerfile`       | Описание сборки контейнера сервиса                      |
+| `README.md`        | Описание микросервиса                                   |
 
 ## API
+
 ### RPC
-Для получения событий от сборщика:
+
+Получение уникальных событий:
+
+```bat
+n.rpc.primary_raw_events_handler.receive_events(<events>)
+
+Args: a batch with events
+Returns: a batch with unique events
 ```
-n.rpc.promary_raw_events_handler.receive_events(<events>)
+
+### HTTP
+
+Получение уникальных событий:
+
+```rst
+POST http://localhost:8000/process HTTP/1.1
+Content-Type: application/json
+
+[event_1, event_2, ..., event_n]
 ```
+
 ## Запуск
+
 ### Локальный запуск
-Сервисы взаимодействуют друг с другом с помощью контейнера RabbitMQ, для его запуска нужно:
+
+Для локального запуска микросервиса требуется запустить контейнер с RabbitMQ.
+
+```bat
+docker run -p 5672:5672 --hostname nameko-rabbitmq rabbitmq:3
 ```
-sudo docker run -p 5672:5672 --hostname nameko-rabbitmq rabbitmq:3
+
+Затем из папки микросервиса вызвать
+
+```bat
+nameko run primary_raw_events_handler
 ```
-Затем из папки `preh` выполнить:
+
+Для проверки `rpc` запустите в командной строке:
+
+```bat
+nameko shell
 ```
-nameko run preh
-```
+
+После чего откроется интерактивная Python среда и обратитесь к сервису одной из команд, представленных выше в разделе `rpc`.
